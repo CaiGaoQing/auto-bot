@@ -94,19 +94,27 @@ def _detect_file_type(message: str) -> tuple[str, str]:
     elif any(kw in message_lower for kw in ['excel', '表格', '工资', '财务', '数据表', 'xlsx', 'csv']):
         return 'xlsx', 'data'
     
-    # SQL
-    elif any(kw in message_lower for kw in ['sql', '数据库', 'database', '建表', '表结构', 'mysql', 'postgresql', 'sqlite']):
+    # Java/SpringBoot 项目代码 - 优先于 SQL（因为可能同时包含"数据库"关键词）
+    elif any(kw in message_lower for kw in ['springboot', 'spring boot', 'spring-boot', 'java后端', 'java代码', '后端代码', 'controller', 'service', 'entity', '实体类']):
+        return 'java_project', 'code'
+    
+    # SQL - 仅当明确是 SQL 相关时
+    elif any(kw in message_lower for kw in ['sql', '建表', '表结构', 'mysql', 'postgresql', 'sqlite']) and not any(kw in message_lower for kw in ['代码', 'code', 'controller', 'service']):
+        return 'sql', 'scripts'
+    elif '数据库' in message_lower and '设计' in message_lower and not any(kw in message_lower for kw in ['代码', 'code', 'controller']):
         return 'sql', 'scripts'
     
-    # 代码文件
+    # Java 单文件
+    elif any(kw in message_lower for kw in ['java', '.java']) and 'javascript' not in message_lower:
+        return 'java', 'code'
+    
+    # 其他代码文件
     elif any(kw in message_lower for kw in ['python', '.py']):
         return 'py', 'code'
     elif any(kw in message_lower for kw in ['javascript', '.js']) and 'typescript' not in message_lower:
         return 'js', 'code'
     elif any(kw in message_lower for kw in ['typescript', '.ts', '.tsx']):
         return 'ts', 'code'
-    elif any(kw in message_lower for kw in ['java', '.java']) and 'javascript' not in message_lower:
-        return 'java', 'code'
     elif any(kw in message_lower for kw in ['go', 'golang', '.go']):
         return 'go', 'code'
     elif any(kw in message_lower for kw in ['rust', '.rs']):
@@ -128,9 +136,101 @@ def _detect_file_type(message: str) -> tuple[str, str]:
     elif any(kw in message_lower for kw in ['html', '网页', 'webpage']):
         return 'html', 'code'
     
+    # 通用代码请求 - 检查是否是代码生成请求
+    elif any(kw in message_lower for kw in ['生成代码', '写代码', '编写代码', '后端代码', '前端代码', '代码生成']):
+        return 'code_project', 'code'
+    
     # 默认 Markdown
     else:
         return 'md', 'docs'
+
+
+def _extract_code_blocks(content: str) -> list[dict]:
+    """从 AI 输出中提取所有代码块"""
+    code_blocks = []
+    
+    # 匹配 ```language:filepath 或 ```language filepath 或 ```language 格式的代码块
+    pattern = r'```(\w+)(?::([^\n`]+))?\n(.*?)```'
+    matches = re.findall(pattern, content, re.DOTALL)
+    
+    for lang, filepath, code in matches:
+        filepath = filepath.strip() if filepath else None
+        code_blocks.append({
+            'language': lang,
+            'filepath': filepath,
+            'code': code.strip()
+        })
+    
+    return code_blocks
+
+
+def _infer_filepath_from_code(code: str, lang: str) -> Optional[str]:
+    """从代码内容推断文件路径"""
+    if lang == 'java':
+        # 尝试从 package 和 class 声明推断路径
+        package_match = re.search(r'package\s+([\w.]+);', code)
+        class_match = re.search(r'(?:public\s+)?(?:class|interface|enum)\s+(\w+)', code)
+        
+        if class_match:
+            class_name = class_match.group(1)
+            if package_match:
+                package_path = package_match.group(1).replace('.', '/')
+                return f'src/main/java/{package_path}/{class_name}.java'
+            else:
+                return f'{class_name}.java'
+    
+    return None
+
+
+def _save_code_project(workspace_id: str, content: str, project_name: str = 'project') -> list[str]:
+    """从 AI 输出中提取代码块并保存为项目文件"""
+    workspace_path = WORKSPACES_ROOT / workspace_id
+    saved_files = []
+    
+    code_blocks = _extract_code_blocks(content)
+    
+    if not code_blocks:
+        # 没有找到代码块，保存为 markdown
+        return []
+    
+    # 语言到扩展名的映射
+    lang_ext_map = {
+        'java': '.java',
+        'python': '.py', 'py': '.py',
+        'javascript': '.js', 'js': '.js',
+        'typescript': '.ts', 'ts': '.ts',
+        'go': '.go',
+        'rust': '.rs', 'rs': '.rs',
+        'cpp': '.cpp', 'c++': '.cpp',
+        'c': '.c',
+        'sql': '.sql',
+        'xml': '.xml',
+        'yaml': '.yaml', 'yml': '.yaml',
+        'json': '.json',
+        'properties': '.properties',
+        'html': '.html',
+        'css': '.css',
+        'sh': '.sh', 'bash': '.sh', 'shell': '.sh',
+    }
+    
+    for i, block in enumerate(code_blocks):
+        lang = block['language'].lower()
+        filepath = block['filepath']
+        code = block['code']
+        
+        if filepath:
+            # 有指定路径，按路径保存
+            target_path = workspace_path / 'code' / project_name / filepath
+        else:
+            # 没有指定路径，根据语言生成文件名
+            ext = lang_ext_map.get(lang, f'.{lang}')
+            target_path = workspace_path / 'code' / project_name / f'file_{i+1}{ext}'
+        
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        target_path.write_text(code, encoding='utf-8')
+        saved_files.append(str(target_path.relative_to(workspace_path)))
+    
+    return saved_files
 
 
 def _generate_filename(message: str, ext: str) -> str:
@@ -480,6 +580,33 @@ async def chat(request: ChatRequest) -> ChatResponse:
 需求：{core_message}
 
 请直接输出 SQL 代码："""
+        elif should_save and ext in ('java_project', 'code_project'):
+            prompt = f"""请根据工作空间中的产品文档和数据库设计，生成完整的后端代码。
+
+重要：请按照以下格式输出每个代码文件，确保每个代码块都指定文件路径：
+
+```java:src/main/java/com/rental/entity/User.java
+package com.rental.entity;
+
+// 代码内容
+```
+
+```java:src/main/java/com/rental/controller/UserController.java
+package com.rental.controller;
+
+// 代码内容
+```
+
+要求：
+1. 每个代码块必须使用 ```language:filepath 格式
+2. 生成完整的、可运行的代码
+3. 包含实体类、Controller、Service、Mapper 等完整结构
+4. 添加必要的注解和注释
+5. 符合 Java/Spring 最佳实践
+
+需求：{core_message}
+
+请生成完整代码："""
         else:
             prompt = request.message
         
@@ -523,6 +650,17 @@ async def chat(request: ChatRequest) -> ChatResponse:
                     saved_file = _generate_pptx(request.workspace_id, content, filename)
                 elif ext == 'xlsx':
                     saved_file = _generate_xlsx(request.workspace_id, content, filename)
+                elif ext in ('java_project', 'code_project'):
+                    # 代码项目：提取所有代码块并分别保存
+                    project_name = re.sub(r'[\\/:*?"<>|\s]', '_', core_message[:20].strip()) or 'project'
+                    saved_files = _save_code_project(request.workspace_id, content, project_name)
+                    if saved_files:
+                        saved_file = ', '.join(saved_files[:5])  # 最多显示5个文件
+                        if len(saved_files) > 5:
+                            saved_file += f' 等 {len(saved_files)} 个文件'
+                    else:
+                        # 没有提取到代码块，保存为 markdown
+                        saved_file = _save_markdown(request.workspace_id, content, 'docs', filename.replace(f'.{ext}', '.md'))
                 elif ext == 'sql':
                     saved_file = _save_markdown(request.workspace_id, content, folder, filename)
                 elif ext in ('py', 'js', 'ts', 'java', 'go', 'rs', 'cpp', 'sh', 'html'):

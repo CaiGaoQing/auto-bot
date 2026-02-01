@@ -61,6 +61,7 @@ def create_app() -> FastAPI:
     from auto.gateway.api.routes import (
         health,
         chat,
+        chat_v2,  # OpenClaw 风格的工具调用 API
         workspaces,
         skills,
         providers,
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     
     app.include_router(health.router, tags=["Health"])
     app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
+    app.include_router(chat_v2.router, prefix="/api/v1", tags=["Chat V2"])  # 工具调用 API
     app.include_router(workspaces.router, prefix="/api/v1", tags=["Workspaces"])
     app.include_router(skills.router, prefix="/api/v1", tags=["Skills"])
     app.include_router(providers.router, prefix="/api/v1", tags=["Providers"])
