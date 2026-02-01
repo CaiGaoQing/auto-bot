@@ -65,6 +65,12 @@ server = [
     "python-multipart>=0.0.6",  # 文件上传支持
 ]
 
+# 多渠道消息支持
+channels = [
+    "python-telegram-bot>=21.0",  # Telegram
+    "discord.py>=2.3.0",          # Discord
+]
+
 # MCP 支持
 mcp = [
     "mcp>=0.9.0",
@@ -121,15 +127,16 @@ all = [
     "ai-auto[mcp]",
     "ai-auto[dev]",
     "ai-auto[skills]",
+    "ai-auto[channels]",
 ]
 
 [project.scripts]
 auto = "auto.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/your-org/ai-auto"
-Documentation = "https://github.com/your-org/ai-auto#readme"
-Repository = "https://github.com/your-org/ai-auto"
+Homepage = "https://github.com/CaiGaoQing/auto-bot"
+Documentation = "https://github.com/CaiGaoQing/auto-bot#readme"
+Repository = "https://github.com/CaiGaoQing/auto-bot"
 
 [tool.hatch.build.targets.wheel]
 packages = ["auto"]

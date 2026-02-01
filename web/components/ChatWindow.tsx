@@ -143,27 +143,30 @@ export function ChatWindow() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 gradient-mesh">
       {/* 头部 */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           {currentRole ? (
             <>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 animate-scale-in">
                 {getRoleIcon()}
               </div>
-              <div>
+              <div className="animate-fade-in">
                 <h1 className="font-semibold text-slate-900 dark:text-slate-100">
                   {currentRole.display_name}
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {currentWorkspace ? currentWorkspace.name : '默认工作空间'}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="status-dot online" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {currentWorkspace ? currentWorkspace.name : '在线'}
+                  </p>
+                </div>
               </div>
             </>
           ) : (
             <>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white shadow-lg">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
@@ -178,15 +181,15 @@ export function ChatWindow() {
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto p-6">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-xl shadow-blue-500/20">
-              <MessageSquare className="w-10 h-10 text-white" />
+          <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/30 animate-float">
+              <MessageSquare className="w-12 h-12 text-white" />
             </div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
               开始新对话
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 max-w-md">
-              {currentRole 
+            <p className="text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+              {currentRole
                 ? `${currentRole.display_name} 已准备就绪，随时为您服务`
                 : '直接输入问题开始对话，或从左侧选择专业角色'
               }
@@ -233,21 +236,22 @@ export function ChatWindow() {
           </div>
         ) : (
           <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <div
                 key={message.id}
+                style={{ animationDelay: `${index * 100}ms` }}
                 className={cn(
-                  'flex gap-4 message-in',
+                  'flex gap-4 animate-slide-up',
                   message.role === 'user' ? 'flex-row-reverse' : ''
                 )}
               >
                 {/* 头像 */}
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg',
+                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transition-transform duration-200 hover:scale-105',
                     message.role === 'user'
                       ? 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-slate-500/20'
-                      : 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/25'
+                      : 'bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 shadow-blue-500/30'
                   )}
                 >
                   {message.role === 'user' ? (
@@ -256,21 +260,21 @@ export function ChatWindow() {
                     <span className="text-white">{getRoleIcon()}</span>
                   )}
                 </div>
-                
+
                 {/* 消息内容 */}
                 <div
                   className={cn(
-                    'max-w-[75%] rounded-2xl px-5 py-4 shadow-sm',
+                    'max-w-[75%] rounded-2xl px-5 py-4 relative',
                     message.role === 'user'
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20'
+                      : 'glass-card'
                   )}
                 >
                   {message.role === 'user' ? (
                     <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                   ) : (
                     <div className={cn(
-                      'prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-100 prose-pre:dark:bg-slate-800',
+                      'prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-100 prose-pre:dark:bg-slate-800 prose-pre:rounded-xl',
                       message.isStreaming && !message.content && 'typing-cursor'
                     )}>
                       {message.content ? (
@@ -278,8 +282,12 @@ export function ChatWindow() {
                           {message.content}
                         </ReactMarkdown>
                       ) : (
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                        <div className="flex items-center gap-3 text-slate-400">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
                           <span>思考中...</span>
                         </div>
                       )}
@@ -287,7 +295,7 @@ export function ChatWindow() {
                   )}
                   <div
                     className={cn(
-                      'text-xs mt-3 opacity-70',
+                      'text-xs mt-3 opacity-60',
                       message.role === 'user'
                         ? 'text-blue-100'
                         : 'text-slate-400'
@@ -305,18 +313,18 @@ export function ChatWindow() {
       </div>
 
       {/* 输入区 */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="p-4 border-t border-slate-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex items-end gap-3 p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-150">
+          <div className="flex items-end gap-3 p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all duration-200 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50">
             {/* 附件按钮 */}
             <button
               type="button"
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors duration-150 cursor-pointer rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="p-2.5 text-slate-400 hover:text-blue-500 transition-all duration-200 cursor-pointer rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105 active:scale-95"
               title="添加附件"
             >
               <Paperclip className="w-5 h-5" />
             </button>
-            
+
             {/* 输入框 */}
             <textarea
               ref={inputRef}
@@ -329,40 +337,40 @@ export function ChatWindow() {
                   : '输入问题开始对话...'
               }
               rows={1}
-              className="flex-1 resize-none bg-transparent px-2 py-2 focus:outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+              className="flex-1 resize-none bg-transparent px-2 py-2 focus:outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               style={{
                 minHeight: '24px',
                 maxHeight: '200px',
               }}
             />
-            
+
             {/* 语音按钮 */}
             <button
               type="button"
               onClick={() => setIsRecording(!isRecording)}
               className={cn(
-                'p-2 rounded-lg transition-all duration-150 cursor-pointer',
+                'p-2.5 rounded-xl transition-all duration-200 cursor-pointer',
                 isRecording
-                  ? 'text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse'
-                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  ? 'text-red-500 bg-red-50 dark:bg-red-900/20 shadow-lg shadow-red-500/20'
+                  : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105 active:scale-95'
               )}
               title={isRecording ? '停止录音' : '语音输入'}
             >
               {isRecording ? (
-                <StopCircle className="w-5 h-5" />
+                <StopCircle className="w-5 h-5 animate-pulse" />
               ) : (
                 <Mic className="w-5 h-5" />
               )}
             </button>
-            
+
             {/* 发送按钮 */}
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
               className={cn(
-                'p-2.5 rounded-xl transition-all duration-150 cursor-pointer',
+                'p-3 rounded-xl transition-all duration-200 cursor-pointer',
                 input.trim() && !isLoading
-                  ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/25'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 active:scale-95'
                   : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
               )}
               title="发送"
@@ -374,9 +382,9 @@ export function ChatWindow() {
               )}
             </button>
           </div>
-          
+
           <p className="text-xs text-center text-slate-400 mt-3">
-            按 Enter 发送，Shift + Enter 换行
+            按 <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono text-[10px]">Enter</kbd> 发送，<kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono text-[10px]">Shift + Enter</kbd> 换行
           </p>
         </form>
       </div>
@@ -389,7 +397,7 @@ function QuickPrompt({ text, onClick }: { text: string; onClick: (text: string) 
   return (
     <button
       onClick={() => onClick(text)}
-      className="px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-150 cursor-pointer shadow-sm"
+      className="px-4 py-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 text-sm text-slate-600 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
     >
       {text}
     </button>

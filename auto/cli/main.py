@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 
 from auto import __version__
-from auto.cli.commands import chat, config, mcp, query, skill, workspace, schedule, role, task
+from auto.cli.commands import chat, config, mcp, query, skill, workspace, schedule, role, task, onboard, doctor
 
 # 创建主应用
 app = typer.Typer(
@@ -27,6 +27,8 @@ app.add_typer(query.app, name="query", help="查询命令")
 app.add_typer(schedule.app, name="schedule", help="定时任务管理")
 app.add_typer(role.app, name="role", help="角色管理")
 app.add_typer(task.app, name="task", help="任务执行（生成 PPT/Excel/PDF）")
+app.add_typer(onboard.app, name="onboard", help="向导式安装配置")
+app.add_typer(doctor.app, name="doctor", help="系统健康诊断")
 
 
 @app.command()
@@ -83,6 +85,8 @@ def help(command: str = typer.Argument(None, help="命令名称")):
             ("mcp", "MCP 服务器管理"),
             ("query", "查询系统信息"),
             ("schedule", "定时任务管理"),
+            ("onboard", "🚀 向导式安装配置"),
+            ("doctor", "🩺 系统健康诊断"),
             ("init", "初始化配置"),
             ("version", "显示版本"),
         ]

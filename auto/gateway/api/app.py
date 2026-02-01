@@ -72,6 +72,7 @@ def create_app() -> FastAPI:
         roles,
         budget,
         tasks,
+        channels,
     )
     
     app.include_router(health.router, tags=["Health"])
@@ -86,6 +87,7 @@ def create_app() -> FastAPI:
     app.include_router(roles.router, prefix="/api/v1", tags=["Roles"])
     app.include_router(budget.router, prefix="/api/v1", tags=["Budget"])
     app.include_router(tasks.router, prefix="/api/v1", tags=["Tasks"])  # 移动端友好任务接口
+    app.include_router(channels.router, prefix="/api/v1", tags=["Channels"])  # 多渠道管理
     app.include_router(ws.router, tags=["WebSocket"])
     
     return app

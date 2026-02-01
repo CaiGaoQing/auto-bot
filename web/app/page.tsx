@@ -22,13 +22,13 @@ export default function Home() {
   }, [setCurrentRole])
 
   return (
-    <main className="flex h-screen bg-slate-50 dark:bg-slate-900">
+    <main className="flex h-screen bg-slate-50 dark:bg-slate-950 gradient-mesh">
       {/* 侧边栏 */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        onToggle={() => setSidebarOpen(!sidebarOpen)} 
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
-      
+
       {/* 主内容区 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <ChatWindow />

@@ -120,3 +120,278 @@ h1, h2, h3, h4, h5, h6 {
   animation: blink 1s step-end infinite;
   @apply text-primary-500;
 }
+
+/* ========== UI/UX Pro Max 增强样式 ========== */
+
+/* 玻璃态效果 */
+.glass {
+  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.glass-card {
+  @apply bg-white/90 dark:bg-slate-800/90 backdrop-blur-lg rounded-2xl border border-slate-200/50 dark:border-slate-700/50;
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.05),
+    0 2px 8px -1px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+}
+
+.dark .glass-card {
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.3),
+    0 2px 8px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* 渐变背景 */
+.gradient-mesh {
+  background:
+    radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.06) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, rgba(236, 72, 153, 0.04) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.06) 0px, transparent 50%);
+}
+
+.dark .gradient-mesh {
+  background:
+    radial-gradient(at 40% 20%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, rgba(236, 72, 153, 0.06) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+}
+
+/* 高级按钮样式 */
+.btn-primary {
+  @apply relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-xl px-5 py-2.5;
+  @apply hover:from-blue-600 hover:to-blue-700 transition-all duration-200;
+  @apply shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30;
+  @apply active:scale-[0.98];
+}
+
+.btn-primary::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0;
+  @apply -translate-x-full;
+  transition: transform 0.5s ease;
+}
+
+.btn-primary:hover::before {
+  @apply translate-x-full;
+}
+
+.btn-secondary {
+  @apply bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium rounded-xl px-5 py-2.5;
+  @apply hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200;
+  @apply border border-slate-200 dark:border-slate-700;
+  @apply active:scale-[0.98];
+}
+
+.btn-ghost {
+  @apply text-slate-600 dark:text-slate-300 font-medium rounded-xl px-4 py-2;
+  @apply hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200;
+  @apply active:scale-[0.98];
+}
+
+/* 输入框增强 */
+.input-enhanced {
+  @apply bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3;
+  @apply border border-slate-200 dark:border-slate-700;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500;
+  @apply placeholder:text-slate-400 dark:placeholder:text-slate-500;
+  @apply transition-all duration-200;
+}
+
+/* 卡片悬浮效果 */
+.card-hover {
+  @apply transition-all duration-300 ease-out;
+}
+
+.card-hover:hover {
+  @apply -translate-y-1;
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.1),
+    0 10px 20px -10px rgba(0, 0, 0, 0.04);
+}
+
+.dark .card-hover:hover {
+  box-shadow:
+    0 20px 40px -15px rgba(0, 0, 0, 0.4),
+    0 10px 20px -10px rgba(0, 0, 0, 0.2);
+}
+
+/* 骨架屏加载 */
+.skeleton {
+  @apply bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse;
+}
+
+.skeleton-shimmer {
+  @apply relative overflow-hidden bg-slate-200 dark:bg-slate-700 rounded-lg;
+}
+
+.skeleton-shimmer::after {
+  content: '';
+  @apply absolute inset-0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+.dark .skeleton-shimmer::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 头像光环效果 */
+.avatar-glow {
+  @apply relative;
+}
+
+.avatar-glow::before {
+  content: '';
+  @apply absolute -inset-1 rounded-full opacity-0 transition-opacity duration-300;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  filter: blur(8px);
+}
+
+.avatar-glow:hover::before {
+  @apply opacity-60;
+}
+
+/* 状态指示器 */
+.status-dot {
+  @apply w-2.5 h-2.5 rounded-full;
+}
+
+.status-dot.online {
+  @apply bg-green-500;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.status-dot.busy {
+  @apply bg-amber-500;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.status-dot.offline {
+  @apply bg-slate-400;
+}
+
+/* 分割线渐变 */
+.divider-gradient {
+  @apply h-px w-full;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.3),
+    transparent
+  );
+}
+
+/* 文字渐变 */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600;
+}
+
+.text-gradient-warm {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-pink-500;
+}
+
+/* 标签样式 */
+.tag {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+  @apply bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300;
+  @apply border border-slate-200 dark:border-slate-700;
+}
+
+.tag-primary {
+  @apply bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400;
+  @apply border-blue-200 dark:border-blue-800;
+}
+
+.tag-success {
+  @apply bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400;
+  @apply border-green-200 dark:border-green-800;
+}
+
+/* 工具提示 */
+.tooltip {
+  @apply relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  @apply absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5;
+  @apply bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs rounded-lg;
+  @apply opacity-0 invisible transition-all duration-200;
+  @apply whitespace-nowrap;
+}
+
+.tooltip:hover::after {
+  @apply opacity-100 visible;
+}
+
+/* 焦点环 */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2;
+  @apply dark:focus-visible:ring-offset-slate-900;
+}
+
+/* 浮动输入框 */
+.input-float {
+  @apply relative;
+}
+
+.input-float input:focus ~ label,
+.input-float input:not(:placeholder-shown) ~ label {
+  @apply -translate-y-6 scale-90 text-blue-500;
+}
+
+/* 涟漪效果 */
+.ripple {
+  @apply relative overflow-hidden;
+}
+
+.ripple::after {
+  content: '';
+  @apply absolute inset-0 pointer-events-none;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+  transform: scale(0);
+  opacity: 0;
+}
+
+.ripple:active::after {
+  transform: scale(2);
+  opacity: 1;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+/* 消息气泡尾巴 */
+.bubble-tail-left::before {
+  content: '';
+  @apply absolute -left-2 top-4 w-4 h-4;
+  background: inherit;
+  clip-path: polygon(100% 0, 100% 100%, 0 50%);
+}
+
+.bubble-tail-right::before {
+  content: '';
+  @apply absolute -right-2 top-4 w-4 h-4;
+  background: inherit;
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+}
