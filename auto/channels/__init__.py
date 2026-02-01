@@ -10,11 +10,12 @@
 """
 
 from .base import BaseChannel, ChannelMessage, ChannelType
-from .manager import ChannelManager
+from .manager import ChannelManager, get_channel_manager
 
 __all__ = [
     "BaseChannel",
     "ChannelMessage",
     "ChannelType",
     "ChannelManager",
+    "get_channel_manager",
 ]

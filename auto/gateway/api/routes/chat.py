@@ -1,4 +1,4 @@
-1`"""对话路由"""
+"""对话路由"""
 
 import json
 import re
@@ -19,7 +19,7 @@ _PROJECT_ROOT = Path(__file__).parent.parent.parent.parent.parent
 WORKSPACES_ROOT = _PROJECT_ROOT / "data" / "workspaces"
 
 
-class ChatRequest(BaseModel
+class ChatRequest(BaseModel):
     """聊天请求"""
     message: str
     model: Optional[str] = None
@@ -326,6 +326,36 @@ async def chat(request: ChatRequest) -> ChatResponse:
         # 检测文件类型
         ext, folder = _detect_file_type(core_message)
         
+        # ========== 读取工作空间知识上下文 ==========
+        workspace_context = ""
+        if request.workspace_id:
+            try:
+                from auto.core.workspace.prompts import get_workspace_prompts
+                
+                prompts = get_workspace_prompts(request.workspace_id)
+                if prompts:
+                    # 检查是否需要读取项目文件（关键词检测）
+                    need_context = any(kw in core_message.lower() for kw in [
+                        '项目', '代码', '文件', '分析', '学习', '理解', '阅读', '读取',
+                        'project', 'code', 'file', 'analyze', 'learn', 'understand', 'read',
+                        '帮我看', '看看', '检查', '优化', '重构', '解释',
+                    ])
+                    
+                    if need_context:
+                        # 读取工作空间所有文件作为上下文
+                        workspace_context = prompts.build_knowledge_context(
+                            include_file_contents=True,
+                            max_files=30,
+                        )
+                    else:
+                        # 只读取文件结构摘要
+                        workspace_context = prompts.build_knowledge_context(
+                            include_file_contents=False,
+                            summary_only=True,
+                        )
+            except Exception as e:
+                print(f"读取工作空间上下文失败: {e}")
+        
         # 根据文件类型调整 AI 提示
         if ext == 'pptx':
             prompt = f"""你是一个专业的PPT设计师。请为以下主题创建完整的PPT内容。
@@ -366,7 +396,23 @@ async def chat(request: ChatRequest) -> ChatResponse:
         else:
             prompt = request.message
         
-        messages = [Message(role=MessageRole.USER, content=prompt)]
+        # 构建消息列表
+        messages = []
+        
+        # 如果有工作空间上下文，先添加系统消息
+        if workspace_context:
+            messages.append(Message(
+                role=MessageRole.SYSTEM,
+                content=f"""你已经阅读并学习了当前工作空间中的所有文件。请根据这些知识来回答用户的问题。
+
+{workspace_context}
+
+---
+
+请根据以上工作空间的内容来理解项目，并帮助用户完成任务。"""
+            ))
+        
+        messages.append(Message(role=MessageRole.USER, content=prompt))
         
         response = await router_instance.chat(
             messages=messages,

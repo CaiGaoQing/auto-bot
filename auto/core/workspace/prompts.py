@@ -3,15 +3,65 @@
 
 借鉴 OpenClaw 的 AGENTS.md / SOUL.md / TOOLS.md 设计
 允许用户通过 Markdown 文件自定义 AI 行为
+
+核心功能:
+- 读取工作空间中的所有文件作为知识上下文
+- 支持 AGENTS.md / SOUL.md / TOOLS.md 自定义行为
+- 智能文件过滤和内容摘要
 """
 
 import os
+import mimetypes
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Set, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
+
+# 支持读取的文件扩展名
+READABLE_EXTENSIONS = {
+    # 代码文件
+    '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp', '.h', '.hpp',
+    '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.cs',
+    # 配置文件
+    '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf',
+    '.env', '.env.example', '.env.local',
+    # 文档文件
+    '.md', '.txt', '.rst', '.adoc',
+    # Web 文件
+    '.html', '.htm', '.css', '.scss', '.sass', '.less',
+    '.vue', '.svelte',
+    # 脚本文件
+    '.sh', '.bash', '.zsh', '.fish', '.bat', '.ps1',
+    # 数据文件
+    '.sql', '.graphql',
+    # 其他
+    '.xml', '.csv',
+}
+
+# 应该跳过的目录
+SKIP_DIRECTORIES = {
+    '.git', '.svn', '.hg',
+    'node_modules', 'venv', '.venv', 'env', '__pycache__',
+    '.idea', '.vscode', '.cursor',
+    'dist', 'build', 'target', 'out',
+    '.next', '.nuxt',
+    'coverage', '.pytest_cache', '.mypy_cache',
+}
+
+# 应该跳过的文件模式
+SKIP_FILES = {
+    '.DS_Store', 'Thumbs.db',
+    'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
+    '.gitignore', '.dockerignore',
+}
+
+# 单个文件最大读取大小 (字节)
+MAX_FILE_SIZE = 100 * 1024  # 100KB
+
+# 总上下文最大大小 (字符)
+MAX_CONTEXT_SIZE = 200 * 1024  # 200K 字符
 
 
 @dataclass
@@ -166,6 +216,243 @@ class WorkspacePrompts:
             "soul_length": len(self.soul_content),
             "tools_length": len(self.tools_content),
         }
+    
+    def scan_workspace_files(
+        self,
+        include_patterns: Optional[List[str]] = None,
+        exclude_patterns: Optional[List[str]] = None,
+        max_files: int = 100,
+    ) -> List[Dict]:
+        """
+        扫描工作空间中的所有文件
+        
+        Args:
+            include_patterns: 要包含的文件模式（glob）
+            exclude_patterns: 要排除的文件模式
+            max_files: 最大文件数量
+        
+        Returns:
+            文件信息列表 [{"path": "...", "size": 123, "type": "python"}, ...]
+        """
+        files = []
+        
+        for root, dirs, filenames in os.walk(self.workspace_path):
+            # 跳过特定目录
+            dirs[:] = [d for d in dirs if d not in SKIP_DIRECTORIES]
+            
+            for filename in filenames:
+                if filename in SKIP_FILES:
+                    continue
+                
+                file_path = Path(root) / filename
+                relative_path = file_path.relative_to(self.workspace_path)
+                
+                # 检查扩展名
+                ext = file_path.suffix.lower()
+                if ext not in READABLE_EXTENSIONS:
+                    continue
+                
+                # 检查文件大小
+                try:
+                    size = file_path.stat().st_size
+                    if size > MAX_FILE_SIZE:
+                        continue
+                    if size == 0:
+                        continue
+                except OSError:
+                    continue
+                
+                # 确定文件类型
+                file_type = self._get_file_type(ext)
+                
+                files.append({
+                    "path": str(relative_path),
+                    "absolute_path": str(file_path),
+                    "size": size,
+                    "type": file_type,
+                    "extension": ext,
+                })
+                
+                if len(files) >= max_files:
+                    break
+            
+            if len(files) >= max_files:
+                break
+        
+        # 按重要性排序：README > 配置文件 > 代码文件
+        def sort_key(f):
+            name = f["path"].lower()
+            if "readme" in name:
+                return (0, name)
+            if f["type"] == "config":
+                return (1, name)
+            if f["type"] == "code":
+                return (2, name)
+            return (3, name)
+        
+        files.sort(key=sort_key)
+        return files
+    
+    def _get_file_type(self, ext: str) -> str:
+        """根据扩展名确定文件类型"""
+        code_exts = {'.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp', 
+                     '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.cs'}
+        config_exts = {'.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.env'}
+        doc_exts = {'.md', '.txt', '.rst', '.adoc'}
+        web_exts = {'.html', '.htm', '.css', '.scss', '.vue', '.svelte'}
+        
+        if ext in code_exts:
+            return "code"
+        elif ext in config_exts:
+            return "config"
+        elif ext in doc_exts:
+            return "document"
+        elif ext in web_exts:
+            return "web"
+        else:
+            return "other"
+    
+    def read_workspace_files(
+        self,
+        max_files: int = 50,
+        max_total_size: int = MAX_CONTEXT_SIZE,
+    ) -> Tuple[List[Dict], int]:
+        """
+        读取工作空间中的所有文件内容
+        
+        Args:
+            max_files: 最大读取文件数
+            max_total_size: 最大总字符数
+        
+        Returns:
+            (文件内容列表, 总字符数)
+        """
+        files = self.scan_workspace_files(max_files=max_files)
+        results = []
+        total_size = 0
+        
+        for file_info in files:
+            if total_size >= max_total_size:
+                break
+            
+            try:
+                file_path = Path(file_info["absolute_path"])
+                content = file_path.read_text(encoding="utf-8", errors="ignore")
+                
+                # 截断过长的内容
+                remaining = max_total_size - total_size
+                if len(content) > remaining:
+                    content = content[:remaining] + "\n... (内容已截断)"
+                
+                results.append({
+                    "path": file_info["path"],
+                    "type": file_info["type"],
+                    "content": content,
+                    "size": len(content),
+                })
+                
+                total_size += len(content)
+                
+            except Exception as e:
+                logger.warning(f"读取文件失败 {file_info['path']}: {e}")
+                continue
+        
+        return results, total_size
+    
+    def build_knowledge_context(
+        self,
+        include_file_contents: bool = True,
+        max_files: int = 30,
+        summary_only: bool = False,
+    ) -> str:
+        """
+        构建工作空间知识上下文
+        
+        将工作空间中的所有文件内容组织成 AI 可以理解的上下文
+        
+        Args:
+            include_file_contents: 是否包含文件内容
+            max_files: 最大文件数
+            summary_only: 仅生成文件列表摘要，不包含内容
+        
+        Returns:
+            知识上下文字符串
+        """
+        parts = []
+        
+        # 添加标题
+        parts.append("# 工作空间知识库\n")
+        parts.append(f"工作空间路径: `{self.workspace_path}`\n")
+        
+        if summary_only:
+            # 仅生成文件结构
+            files = self.scan_workspace_files(max_files=100)
+            parts.append(f"\n## 文件结构 (共 {len(files)} 个文件)\n")
+            
+            # 按目录分组
+            dirs = {}
+            for f in files:
+                path = Path(f["path"])
+                parent = str(path.parent) if path.parent != Path(".") else "根目录"
+                if parent not in dirs:
+                    dirs[parent] = []
+                dirs[parent].append(f)
+            
+            for dir_name, dir_files in sorted(dirs.items()):
+                parts.append(f"\n### {dir_name}/\n")
+                for f in dir_files:
+                    parts.append(f"- `{Path(f['path']).name}` ({f['type']}, {f['size']} bytes)")
+            
+        elif include_file_contents:
+            # 读取并包含文件内容
+            files, total_size = self.read_workspace_files(max_files=max_files)
+            
+            parts.append(f"\n## 项目文件 (共 {len(files)} 个文件, {total_size:,} 字符)\n")
+            parts.append("以下是工作空间中的文件内容，请学习并理解这些内容：\n")
+            
+            for f in files:
+                parts.append(f"\n### 文件: `{f['path']}`\n")
+                parts.append(f"类型: {f['type']} | 大小: {f['size']} 字符\n")
+                
+                # 根据文件类型添加代码块
+                lang = self._get_language_for_file(f['path'])
+                parts.append(f"\n```{lang}\n{f['content']}\n```\n")
+        
+        return "\n".join(parts)
+    
+    def _get_language_for_file(self, path: str) -> str:
+        """获取文件对应的语言标识"""
+        ext = Path(path).suffix.lower()
+        lang_map = {
+            '.py': 'python',
+            '.js': 'javascript',
+            '.ts': 'typescript',
+            '.jsx': 'jsx',
+            '.tsx': 'tsx',
+            '.java': 'java',
+            '.c': 'c',
+            '.cpp': 'cpp',
+            '.go': 'go',
+            '.rs': 'rust',
+            '.rb': 'ruby',
+            '.php': 'php',
+            '.swift': 'swift',
+            '.kt': 'kotlin',
+            '.cs': 'csharp',
+            '.json': 'json',
+            '.yaml': 'yaml',
+            '.yml': 'yaml',
+            '.toml': 'toml',
+            '.md': 'markdown',
+            '.html': 'html',
+            '.css': 'css',
+            '.scss': 'scss',
+            '.vue': 'vue',
+            '.sql': 'sql',
+            '.sh': 'bash',
+            '.xml': 'xml',
+        }
+        return lang_map.get(ext, '')
 
 
 # 默认模板
