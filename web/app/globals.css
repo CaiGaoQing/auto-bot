@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Font: Poppins + Open Sans */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Color System - SaaS Trust Blue */
+  --color-primary: 37 99 235;       /* #2563EB */
+  --color-secondary: 59 130 246;    /* #3B82F6 */
+  --color-accent: 249 115 22;       /* #F97316 */
+  --color-background: 248 250 252;  /* #F8FAFC */
+  --color-surface: 255 255 255;     /* #FFFFFF */
+  --color-text: 30 41 59;           /* #1E293B */
+  --color-text-muted: 71 85 105;    /* #475569 */
+  --color-border: 226 232 240;      /* #E2E8F0 */
+  
+  --foreground-rgb: 30, 41, 59;
+  --background-rgb: 248, 250, 252;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: 15 23 42;     /* #0F172A */
+    --color-surface: 30 41 59;        /* #1E293B */
+    --color-text: 248 250 252;        /* #F8FAFC */
+    --color-text-muted: 148 163 184;  /* #94A3B8 */
+    --color-border: 51 65 85;         /* #334155 */
+    
+    --foreground-rgb: 248, 250, 252;
+    --background-rgb: 15, 23, 42;
+  }
+}
+
+body {
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background-color: rgb(var(--background-rgb));
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Markdown 样式 */
+.prose pre {
+  @apply bg-slate-100 dark:bg-slate-800 rounded-lg p-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+/* 消息动画 */
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-in {
+  animation: messageIn 0.3s ease-out;
+}
+
+/* 打字机效果 */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typing-cursor::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  @apply text-primary-500;
+}

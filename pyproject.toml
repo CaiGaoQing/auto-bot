@@ -1,0 +1,168 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-auto"
+version = "0.1.0"
+description = "AI 个人助手 - 支持 CLI 和 Web 的智能工作平台"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "AI Auto Team", email = "team@example.com" }
+]
+keywords = ["ai", "assistant", "cli", "automation", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    # CLI
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "prompt-toolkit>=3.0.0",
+    
+    # AI
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "litellm>=1.0.0",
+    
+    # Data
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "pyyaml>=6.0",
+    
+    # Database (本地模式)
+    "aiosqlite>=0.19.0",
+    
+    # HTTP
+    "httpx>=0.25.0",
+    "aiohttp>=3.9.0",
+    
+    # Utils
+    "python-dotenv>=1.0.0",
+    "jinja2>=3.1.0",
+]
+
+[project.optional-dependencies]
+# 后端服务依赖
+server = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "sqlalchemy>=2.0.0",
+    "aiomysql>=0.2.0",
+    "redis>=5.0.0",
+    "celery>=5.3.0",
+    "python-multipart>=0.0.6",  # 文件上传支持
+]
+
+# MCP 支持
+mcp = [
+    "mcp>=0.9.0",
+]
+
+# 开发依赖
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+# 技能包依赖
+skills = [
+    # 财务
+    "openpyxl>=3.1.0",
+    "pandas>=2.0.0",
+    
+    # A股调研
+    "akshare>=1.10.0",
+    "mplfinance>=0.12.0",
+    "matplotlib>=3.7.0",
+    
+    # 文档生成
+    "python-pptx>=0.6.0",
+    "python-docx>=1.0.0",
+    "markdown>=3.5.0",
+    "weasyprint>=60.0",
+    
+    # 知识库/RAG
+    "chromadb>=0.4.0",
+    "pymupdf>=1.23.0",
+    
+    # 网络搜索
+    "duckduckgo-search>=4.0.0",
+    "beautifulsoup4>=4.12.0",
+    
+    # 语音交互
+    "openai>=1.0.0",
+    
+    # RPA 自动化
+    "pyautogui>=0.9.0",
+    "pillow>=10.0.0",
+    "pytesseract>=0.3.0",
+    "pygetwindow>=0.0.9",
+]
+
+# 全部依赖
+all = [
+    "ai-auto[server]",
+    "ai-auto[mcp]",
+    "ai-auto[dev]",
+    "ai-auto[skills]",
+]
+
+[project.scripts]
+auto = "auto.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/your-org/ai-auto"
+Documentation = "https://github.com/your-org/ai-auto#readme"
+Repository = "https://github.com/your-org/ai-auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["auto"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["auto"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --cov=auto --cov-report=term-missing"

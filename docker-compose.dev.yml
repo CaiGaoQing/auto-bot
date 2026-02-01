@@ -1,0 +1,35 @@
+# AI Auto - 开发环境 Docker Compose
+# 轻量级开发配置
+
+version: '3.8'
+
+services:
+  # 应用 (开发模式，代码热重载)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-auto-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///data/dev.db
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    volumes:
+      - .:/app
+      - ./data:/data
+    command: python -m uvicorn auto.gateway.api.app:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  # SQLite 不需要额外服务
+  # 开发环境使用本地文件
+
+  # Redis (可选，开发时可不用)
+  redis:
+    image: redis:7-alpine
+    container_name: ai-auto-redis-dev
+    ports:
+      - "6379:6379"
+    profiles:
+      - with-redis

@@ -1,0 +1,65 @@
+# Docker 忽略文件
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.eggs
+*.egg-info
+.installed.cfg
+*.egg
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+.mypy_cache
+.ruff_cache
+
+# 虚拟环境
+venv
+.venv
+env
+.env
+ENV
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# 文档
+docs
+*.md
+!README.md
+
+# 测试
+tests
+test_*
+
+# 本地数据
+data
+*.db
+*.sqlite
+
+# 日志
+logs
+*.log
+
+# 配置 (敏感信息)
+config/*.yaml
+!config/example.yaml
+
+# 其他
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
