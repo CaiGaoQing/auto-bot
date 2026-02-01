@@ -36,25 +36,99 @@ class ChatResponse(BaseModel):
     data: dict
 
 
+def _should_save_file(message: str) -> bool:
+    """判断是否需要保存文件"""
+    message_lower = message.lower()
+    
+    # 明确需要生成文件的关键词
+    save_keywords = [
+        # 文档类
+        'ppt', '演示', '幻灯片', 'slide', 'powerpoint',
+        'excel', '表格', 'xlsx', 'csv',
+        '文档', 'document', 'word', 'docx',
+        # 代码类
+        '写代码', '写脚本', '生成代码', '创建脚本',
+        '写一个', '生成一个', '创建一个', '做一个',
+        '帮我写', '帮我生成', '帮我创建',
+        # 数据类
+        'sql', '数据库', 'database', '建表', '表结构',
+        'json文件', 'yaml文件', 'xml文件',
+        # 输出类
+        '导出', 'export', '保存', 'save', '输出文件',
+        # PRD/设计
+        'prd', '产品文档', '需求文档', '设计文档', '技术方案',
+    ]
+    
+    # 不需要保存文件的关键词（优先级更高）
+    no_save_keywords = [
+        '什么是', '是什么', '怎么', '如何', '为什么', '解释',
+        '分析', '检查', '看看', '理解', '学习',
+        '有什么', '哪些', '区别', '对比', '比较',
+        '告诉我', '说说', '介绍', '了解',
+        '问题', '错误', '修复', 'fix', 'bug',
+        '?', '？',
+    ]
+    
+    # 如果包含不保存关键词，返回 False
+    if any(kw in message_lower for kw in no_save_keywords):
+        # 除非同时有明确的生成关键词
+        if not any(kw in message_lower for kw in ['生成', '写', '创建', '做', '导出']):
+            return False
+    
+    # 如果包含保存关键词，返回 True
+    if any(kw in message_lower for kw in save_keywords):
+        return True
+    
+    return False
+
+
 def _detect_file_type(message: str) -> tuple[str, str]:
     """根据消息检测应该生成的文件类型"""
     message_lower = message.lower()
     
-    # 检测关键词
-    if any(kw in message_lower for kw in ['ppt', '演示', '幻灯片', 'slide']):
+    # PPT
+    if any(kw in message_lower for kw in ['ppt', '演示', '幻灯片', 'slide', 'powerpoint']):
         return 'pptx', 'ppt'
-    elif any(kw in message_lower for kw in ['excel', '表格', '工资', '财务', '数据表', 'xlsx']):
+    
+    # Excel
+    elif any(kw in message_lower for kw in ['excel', '表格', '工资', '财务', '数据表', 'xlsx', 'csv']):
         return 'xlsx', 'data'
-    elif any(kw in message_lower for kw in ['代码', 'python', 'code', '脚本', 'script']):
-        if 'python' in message_lower:
-            return 'py', 'code'
-        elif 'javascript' in message_lower or 'js' in message_lower:
-            return 'js', 'code'
-        elif 'typescript' in message_lower or 'ts' in message_lower:
-            return 'ts', 'code'
+    
+    # SQL
+    elif any(kw in message_lower for kw in ['sql', '数据库', 'database', '建表', '表结构', 'mysql', 'postgresql', 'sqlite']):
+        return 'sql', 'scripts'
+    
+    # 代码文件
+    elif any(kw in message_lower for kw in ['python', '.py']):
         return 'py', 'code'
-    elif any(kw in message_lower for kw in ['json', '配置']):
+    elif any(kw in message_lower for kw in ['javascript', '.js']) and 'typescript' not in message_lower:
+        return 'js', 'code'
+    elif any(kw in message_lower for kw in ['typescript', '.ts', '.tsx']):
+        return 'ts', 'code'
+    elif any(kw in message_lower for kw in ['java', '.java']) and 'javascript' not in message_lower:
+        return 'java', 'code'
+    elif any(kw in message_lower for kw in ['go', 'golang', '.go']):
+        return 'go', 'code'
+    elif any(kw in message_lower for kw in ['rust', '.rs']):
+        return 'rs', 'code'
+    elif any(kw in message_lower for kw in ['c++', 'cpp', '.cpp']):
+        return 'cpp', 'code'
+    elif any(kw in message_lower for kw in ['shell', 'bash', '.sh', '脚本']):
+        return 'sh', 'scripts'
+    
+    # 配置文件
+    elif any(kw in message_lower for kw in ['json', 'json文件']):
         return 'json', 'data'
+    elif any(kw in message_lower for kw in ['yaml', 'yml']):
+        return 'yaml', 'data'
+    elif any(kw in message_lower for kw in ['xml']):
+        return 'xml', 'data'
+    
+    # HTML
+    elif any(kw in message_lower for kw in ['html', '网页', 'webpage']):
+        return 'html', 'code'
+    
+    # 默认 Markdown
     else:
         return 'md', 'docs'
 
@@ -356,8 +430,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             except Exception as e:
                 print(f"读取工作空间上下文失败: {e}")
         
-        # 根据文件类型调整 AI 提示
-        if ext == 'pptx':
+        # 根据文件类型调整 AI 提示（仅当需要保存文件时）
+        if should_save and ext == 'pptx':
             prompt = f"""你是一个专业的PPT设计师。请为以下主题创建完整的PPT内容。
 
 要求：
@@ -383,7 +457,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
 主题：{core_message}
 
 请直接输出PPT内容，不要有任何解释性文字："""
-        elif ext == 'xlsx':
+        elif should_save and ext == 'xlsx':
             prompt = f"""请为以下需求创建完整的表格数据。使用 Markdown 表格格式，包含表头和至少10行数据：
 
 | 列1 | 列2 | 列3 | 列4 |
@@ -393,6 +467,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
 需求：{core_message}
 
 请直接输出表格，不要有任何解释性文字："""
+        elif should_save and ext == 'sql':
+            prompt = f"""请为以下需求编写 SQL 语句。
+
+要求：
+1. 使用标准 SQL 语法
+2. 添加必要的注释说明
+3. 考虑数据类型和约束
+4. 如果是建表语句，包含主键、索引等
+
+需求：{core_message}
+
+请直接输出 SQL 代码："""
         else:
             prompt = request.message
         
@@ -422,8 +508,11 @@ async def chat(request: ChatRequest) -> ChatResponse:
         content = response.message.content
         saved_file = None
         
-        # 如果有工作空间 ID 且需要保存
-        if request.workspace_id and request.save_to_workspace:
+        # 判断是否需要保存文件
+        should_save = _should_save_file(core_message)
+        
+        # 如果有工作空间 ID 且需要保存且用户允许保存
+        if request.workspace_id and request.save_to_workspace and should_save:
             workspace_path = WORKSPACES_ROOT / request.workspace_id
             if workspace_path.exists():
                 filename = _generate_filename(core_message, ext)
@@ -433,6 +522,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
                     saved_file = _generate_pptx(request.workspace_id, content, filename)
                 elif ext == 'xlsx':
                     saved_file = _generate_xlsx(request.workspace_id, content, filename)
+                elif ext == 'sql':
+                    saved_file = _save_markdown(request.workspace_id, content, folder, filename)
+                elif ext in ('py', 'js', 'ts', 'java', 'go', 'rs', 'cpp', 'sh', 'html'):
+                    saved_file = _save_markdown(request.workspace_id, content, folder, filename)
+                elif ext in ('json', 'yaml', 'xml'):
+                    saved_file = _save_markdown(request.workspace_id, content, folder, filename)
                 else:
                     saved_file = _save_markdown(request.workspace_id, content, folder, filename)
         
