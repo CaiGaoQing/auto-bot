@@ -397,8 +397,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
             import re
             core_message = re.sub(r'\[参考文件[^\]]*\]\s*', '', core_message).strip()
         
-        # 检测文件类型
+        # 检测文件类型和是否需要保存
         ext, folder = _detect_file_type(core_message)
+        should_save = _should_save_file(core_message)
         
         # ========== 读取工作空间知识上下文 ==========
         workspace_context = ""
